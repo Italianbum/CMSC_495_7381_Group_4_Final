@@ -1,0 +1,468 @@
+####################################################################
+# __filename__ = "weather.kv"
+# __coursename__ = "CMSC 495 7381 - Current Trends in Computer Science (2222)"
+# __author__ = ["Sheldon Hallal", "Michael Annino", "Chelsey Hillen"]
+# __copyright__ = "no copyright"
+# __credits__ = ["Sheldon Hallal", "Michael Annino", "Chelsey Hillen"]
+# __license__ = "no license"
+# __version__ = "0.6.0"
+# __maintainer__ = ["Sheldon Hallal", "Michael Annino", "Chelsey Hillen"]]
+# __email__ = ["smhallal@gmail.com", "mannino@student.umgc.edu" , "clhillen1@yahoo.com" ]
+# __status__ = "Baseline"
+# __docformat__ = 'reStructuredText'
+#
+# :blackboldunderline:`REQUIREMENTS:`
+#
+#    * Generate GUI Designs for weather.py
+#
+####################################################################""
+
+#:import Factory kivy.factory.Factory
+###################################################################
+# Options Popup - Displays options menu for changes
+####################################################################
+<MyPopup@Popup>
+    auto_dismiss: False
+    title: 'Options'
+    size_hint: (.6, .8)
+    pos_hint: {'right': 1, 'top': .9}
+    background_color: (.5,.5,.5,.9)
+    BoxLayout:
+        spacing: 5
+        orientation: 'vertical'
+        GridLayout:
+            rows: 1
+            spacing: 0
+            Label:
+                text:'Use Device Location: '
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            CheckBox:
+                size_hint: (.3, .3)
+                active: app.user_config.ip
+                on_active: app.checkbox_click(self.active,'ip', self.active)
+        GridLayout:
+            rows: 1
+            Label:
+                text: '\u00B0C'
+            CheckBox:
+                size_hint: (.3, .3)
+                group: 'temperature_setting'
+                allow_no_selection: False
+                active: True if app.user_config.temp=='feelslike_c' else False
+                on_active: app.checkbox_click(self.active,'temp', 'feelslike_c')
+            Label:
+                text: '\u00B0F'
+            CheckBox:
+                size_hint: (.3, .3)
+                group: 'temperature_setting'
+                allow_no_selection: False
+                active: True if app.user_config.temp=='feelslike_f' else False
+                on_active: app.checkbox_click(self.active, 'temp', 'feelslike_f')
+        GridLayout:
+            rows: 1
+            Label:
+                text:'Km/H'
+            CheckBox:
+                size_hint: (.3, .3)
+                group: 'wind_setting'
+                allow_no_selection: False
+                active: True if app.user_config.wind=='wind_kph' else False
+                on_active: app.checkbox_click(self.active, 'wind', 'wind_kph')
+            Label:
+                text:'MPH'
+            CheckBox:
+                size_hint: (.3, .3)
+                group: 'wind_setting'
+                allow_no_selection: False
+                active: True if app.user_config.wind=='wind_mph' else False
+                on_active: app.checkbox_click(self.active, 'wind', 'wind_mph')
+        GridLayout:
+            rows: 1
+            Label:
+                text:'24 Hour'
+            CheckBox:
+                size_hint: (.3, .3)
+                group: 'clock_setting'
+                allow_no_selection: False
+                active: True if app.user_config.hour=='24' else False
+                on_active: app.checkbox_click(self.active, 'hour', '24')
+            Label:
+                text:'AM/PM'
+            CheckBox:
+                size_hint: (.3, .3)
+                group: 'clock_setting'
+                allow_no_selection: False
+                active: True if app.user_config.hour=='12' else False
+                on_active: app.checkbox_click(self.active, 'hour', '12')
+        GridLayout:
+            rows: 1
+            Label:
+                text: 'Change Location: '
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            TextInput:
+                hint_text: 'Search Location'
+                id: location_update
+                # size_hint: .3, .1
+                multiline: False
+                on_text_validate: app.read_input(location_update)
+                on_text_validate: app.checkbox_click(False,'ip', False)
+        Button:
+            text: 'Close'
+            on_release: root.dismiss()
+
+###################################################################
+# Alert Popup - Displays Alert Information if available
+####################################################################
+<MyAlert@Popup>
+    auto_dismiss: True
+    title: 'Alert'
+    size_hint: (.8, .8)
+    background_color: (.4,.4,.4,.9)
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
+        Label:
+            text:
+                app.weather_data['alerts']['alert'][0]['headline'] +\
+                '\n\n' + app.weather_data['alerts']['alert'][0]['areas'] +\
+                '\n\n' + app.weather_data['alerts']['alert'][0]['desc']
+            size_hint_y: None
+            height: self.texture_size[1]
+            text_size: self.width, None
+            padding: 10, 10
+
+####################################################################
+# Main Window - RelativeLayout
+# Top Panel - Creates Top bar and background for the window
+####################################################################
+RelativeLayout:
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "background.png"
+    ActionBar:
+        background_color: 0,0,0,.7
+        size_hint: 1, 0.1
+        pos_hint: {'top': 1}
+        ActionView:
+            use_seperator: True
+            ActionPrevious:
+                title: 'Group 4 - CMSC 495 Wicked Weather Widget'
+                with_previous: False
+                app_icon: 'sunny_icon.png'
+            ActionButton:
+                text: 'Alert'
+                opacity: 0 if not app.weather_data['alerts']['alert'] else 1
+                disabled: True if not app.weather_data['alerts']['alert'] else False
+                background_color: rgba(0,0,0,0)
+                color: (1,.2,.2,1)
+                background_normal: ''
+                on_release: Factory.MyAlert().open()
+            ActionButton:
+                text: 'Options'
+                background_color: rgba(0,0,0,0)
+                background_normal: ''
+                on_release: Factory.MyPopup().open()
+
+####################################################################
+# Bottom Panel - Allows selection between 3-day forecast and 10-hour forecast
+####################################################################
+    TabbedPanel:
+        size_hint: 1, 0.30
+        do_default_tab: False
+        tab_pos: 'top_mid'
+        tab_width: 50
+        tab_height: 25
+        background_color: .2,.2,.2,.7
+
+####################################################################
+# Bottom Panel Tab - Displays 3-day Forecast
+####################################################################
+        TabbedPanelItem:
+            text: 'Daily'
+            background_color: .5,.5,.5,.7
+            GridLayout:
+                rows: 3
+                cols: 3
+                Label:
+                    text: app.day_display[0]
+                Label:
+                    text: app.day_display[1]
+                Label:
+                    text: app.day_display[2]
+                Label:
+                    text: app.weather_forecast[0]['day']['condition']['text']
+                    text_size: self.width, None
+                    height: self.texture_size[1]
+                    halign: 'center'
+                Label:
+                    text: app.weather_forecast[1]['day']['condition']['text']
+                    text_size: self.width, None
+                    height: self.texture_size[1]
+                    halign: 'center'
+                Label:
+                    text: app.weather_forecast[2]['day']['condition']['text']
+                    text_size: self.width, None
+                    height: self.texture_size[1]
+                    halign: 'center'
+                AsyncImage:
+                    source: 'https:' + app.weather_forecast[0]['day']['condition']['icon']
+                AsyncImage:
+                    source: 'https:' + app.weather_forecast[1]['day']['condition']['icon']
+                AsyncImage:
+                    source: 'https:' + app.weather_forecast[2]['day']['condition']['icon']
+
+####################################################################
+# Bottom Panel Tab - Displays 10-hour Forecast
+####################################################################
+        TabbedPanelItem:
+            text: 'Hourly'
+            background_color: .5,.5,.5,.7
+            ScrollView:
+                do_scroll_x: True
+                do_scroll_y: False
+                size: self.size
+                GridLayout:
+                    cols: 10
+                    rows: 3
+                    size_hint_x: None
+                    col_default_width: '100dp'
+                    col_force_default: True
+                    width: self.minimum_width
+                    Label:
+                        text: app.hour_display[0]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[1]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[2]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[3]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[4]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[5]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[6]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[7]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[8]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_display[9]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[0]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[1]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[2]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[3]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[4]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[5]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[6]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[7]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[8]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    Label:
+                        text: app.hour_condition[9]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[0]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[1]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[2]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[3]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[4]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[5]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[6]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[7]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[8]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+                    AsyncImage:
+                        source: app.hour_image[9]
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                        halign: 'center'
+
+####################################################################
+# Center Layout - Displays current weather
+####################################################################
+    GridLayout:
+        cols: 3
+        rows: 1
+        size_hint: 1, 1
+        pos_hint: {'center_x': .5, 'center_y': .6}
+        height: self.minimum_height
+        size_hint_y: .5
+        BoxLayout:
+            cols: 1
+            rows: 0
+            orientation: 'vertical'
+            size_hint: 1, 1
+            pos_hint: {'center_x': .4, 'center_y': .5}
+            halign: 'center'
+            Label:
+                text: app.clock
+                font_name: 'Roboto'
+                font_size: 22
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            Label:
+                text:  app.weather_location
+                font_name: 'Roboto'
+                font_size: 18
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            AsyncImage:
+                source: 'https:' + app.weather_current['condition']['icon']
+            Label:
+                text: app.weather_current['condition']['text']
+        BoxLayout:
+            cols: 1
+            orientation: 'vertical'
+            pos_hint: {'center_x': .6, 'center_y': .7}
+            halign: 'center'
+            Label:
+                text: 'Feels Like: ' + app.current_temp
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            Label:
+                text: 'Wind Speed: '  + app.current_wind
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            Label:
+                text: 'Wind Direction: '  + app.weather_current['wind_dir']
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            Label:
+                text: 'Humidity: '  + str(app.weather_current['humidity']) + ' %'
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+            Label:
+                text: 'Cloud Coverage: '  + str(app.weather_current['cloud']) + ' %'
+                text_size: self.width, None
+                height: self.texture_size[1]
+                halign: 'center'
+        BoxLayout:
+            cols: 1
+            rows: 0
+            orientation: 'vertical'
+            Image:
+                size_hint: 1, 1
+                pos_hint: {'center_x': .5, 'center_y': .5}
+                width: 125
+                height: 150
+                size_hint_x: None
+                size_hint_y: .9
+                keep_ratio: True
+                allow_stretch: False
+                halign: 'center'
+                valign: 'center'
+                source: "center_image.png"
